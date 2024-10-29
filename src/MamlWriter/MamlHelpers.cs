@@ -162,7 +162,8 @@ namespace Microsoft.PowerShell.PlatyPS.MAML
             }
             foreach(var parameter in syntax.GetParametersInOrder())
             {
-                newSyntax.Parameters.Add(ConvertParameter(parameter));
+                SyntaxParameter syntaxParam = syntax.SyntaxParameters.First(x => x.ParameterName == parameter.Name);
+                newSyntax.Parameters.Add(ConvertParameter(parameter, syntaxParam.ParameterType));
             }
 
             return newSyntax;
@@ -175,19 +176,25 @@ namespace Microsoft.PowerShell.PlatyPS.MAML
             return pipelineInput;
         }
 
-        private static ParameterValue GetParameterValue(Model.Parameter parameter)
+        private static ParameterValue? GetParameterValue(Model.Parameter parameter, string? syntaxParameterType = null)
         {
+            // dont render <command:parameterValue> element when the parameter type is SwichParameter
+            if (parameter.Type is "SwitchParameter" or "System.Management.Automation.SwitchParameter")
+            {
+                return null;
+            }
             var parameterValue = new ParameterValue();
             if (parameter is not null)
             {
-                parameterValue.DataType = parameter.Type;
+                // Set SyntaxParameter's parameter type name for <command:syntaxItem>
+                parameterValue.DataType = syntaxParameterType is null ? parameter.Type : syntaxParameterType;
                 parameterValue.IsVariableLength = parameter.VariableLength;
                 parameterValue.IsMandatory = true;
             }
             return parameterValue;
         }
 
-        private static Parameter ConvertParameter(Model.Parameter parameter)
+        private static Parameter ConvertParameter(Model.Parameter parameter, string? syntaxParameterType = null)
         {
             var newParameter = new MAML.Parameter();
             newParameter.Name = parameter.Name;
@@ -195,7 +202,8 @@ namespace Microsoft.PowerShell.PlatyPS.MAML
             newParameter.SupportsGlobbing = parameter.SupportsWildcards;
             var pSet = parameter.ParameterSets.FirstOrDefault();
             newParameter.Position = pSet is null ? Model.Constants.NamedString : pSet.Position;
-            newParameter.Value = GetParameterValue(parameter);
+            newParameter.Value = GetParameterValue(parameter, syntaxParameterType);
+            newParameter.Type.Name = parameter.Type;
 
             if (parameter.Description is not null)
             {
