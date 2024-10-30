@@ -90,9 +90,21 @@ namespace Microsoft.PowerShell.PlatyPS.MAML
 
             if (commandHelp.Syntax is not null)
             {
+                var syntaxTypeDict = new Dictionary<string, string>();
                 foreach (var syntax in commandHelp.Syntax)
                 {
-                    command.Syntax.Add(ConvertSyntax(syntax));
+                    foreach (var syntaxParam in syntax.SyntaxParameters)
+                    {
+                        if (!syntaxTypeDict.ContainsKey(syntaxParam.ParameterName))
+                        {
+                            syntaxTypeDict.Add(syntaxParam.ParameterName, syntaxParam.ParameterType);
+                        }
+                    }
+                }
+
+                foreach (var syntax in commandHelp.Syntax)
+                {
+                    command.Syntax.Add(ConvertSyntax(syntax, syntaxTypeDict));
                 }
             }
 
@@ -148,7 +160,7 @@ namespace Microsoft.PowerShell.PlatyPS.MAML
             }
         }
 
-        private static SyntaxItem ConvertSyntax(Model.SyntaxItem syntax)
+        private static SyntaxItem ConvertSyntax(Model.SyntaxItem syntax, IDictionary<string, string> syntaxTypeDict)
         {
             var newSyntax = new SyntaxItem();
             var firstSpace = syntax.CommandName.IndexOf(' ');
@@ -162,8 +174,7 @@ namespace Microsoft.PowerShell.PlatyPS.MAML
             }
             foreach(var parameter in syntax.GetParametersInOrder())
             {
-                SyntaxParameter syntaxParam = syntax.SyntaxParameters.First(x => x.ParameterName == parameter.Name);
-                newSyntax.Parameters.Add(ConvertParameter(parameter, syntaxParam.ParameterType));
+                newSyntax.Parameters.Add(ConvertParameter(parameter, syntaxTypeDict[parameter.Name]));
             }
 
             return newSyntax;
