@@ -9,6 +9,7 @@ using System.Linq;
 using Microsoft.PowerShell.PlatyPS;
 using Microsoft.PowerShell.PlatyPS.Model;
 using System.Text;
+using Markdig.Syntax;
 
 namespace Microsoft.PowerShell.PlatyPS.MAML
 {
@@ -196,9 +197,36 @@ namespace Microsoft.PowerShell.PlatyPS.MAML
         {
             var newExample = new CommandExample();
             newExample.Title = string.Format($"--------- {example.Title} ---------");
-            foreach(string s in example.Remarks.Split(new string[] { "\n\n" }, StringSplitOptions.None))
+            string contents = example.Remarks;
+            MarkdownDocument ast = Markdig.Markdown.Parse(contents);
+            foreach (Block block in ast)
             {
-                newExample.Description.Add(s.Trim());
+                if (block is CodeBlock code)
+                {
+                    // Aggregate multiple CodeBlocks
+                    if (newExample.Code.Length > 0)
+                    {
+                        newExample.Code += "\n\n" + code.Lines.ToString();
+                    }
+                    else
+                    {
+                        newExample.Code = code.Lines.ToString();
+                    }
+                }
+                else if (newExample.Code.Length == 0) // before <dev:code> => <maml:introduction>
+                {
+                    newExample.Description.Add(contents.Substring(block.Span.Start, block.Span.Length).Trim());
+                }
+                else // after <dev:code> => <dev:remarks>
+                {
+                    newExample.Remarks.Add(contents.Substring(block.Span.Start, block.Span.Length).Trim());
+                }
+            }
+            if (newExample.Description.Count > 0)
+            {
+                // little hack: add 2 empty lines to last paragraph.
+                //              otherwise, contents of <maml:introduction> and after <dev:code> are joined
+                newExample.Description[newExample.Description.Count - 1] += "\n\n";
             }
             return newExample;
         }
