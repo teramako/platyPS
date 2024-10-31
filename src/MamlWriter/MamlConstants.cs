@@ -31,6 +31,7 @@ namespace Microsoft.PowerShell.PlatyPS.Model
         internal const string MamlAlertTag = "maml:alert";
         internal const string MamlCommandExamplesTag = "command:examples";
         internal const string MamlCommandExampleTag = "command:example";
+        internal const string MamlIntroductionTag = "maml:introduction";
         internal const string MamlTitleTag = "maml:title";
         internal const string MamlDevCodeTag = "dev:code";
         internal const string MamlDevRemarksTag = "dev:remarks";

@@ -201,12 +201,42 @@ namespace Microsoft.PowerShell.PlatyPS
                 title = reader.ReadElementContentAsString().Trim(' ', '-').Replace($"Example {exampleCounter}: ", string.Empty);
             }
 
-            if (reader.ReadToFollowing(Constants.MamlDevCodeTag))
+            StringBuilder remarks = Constants.StringBuilderPool.Get();
+
+            do
             {
-                code = reader.ReadElementContentAsString();
+                if (reader.NodeType == XmlNodeType.Element)
+                    break;
+            } while (reader.Read());
+            if (reader.Name == Constants.MamlIntroductionTag)
+            {
+                if (reader.ReadToDescendant(Constants.MamlParaTag))
+                {
+                    do
+                    {
+                        string introString = reader.ReadElementContentAsString().Trim();
+                        if (!string.IsNullOrEmpty(introString))
+                        {
+                            _ = remarks.AppendLine(introString);
+                        }
+                    }
+                    while (reader.ReadToNextSibling(Constants.MamlParaTag));
+                }
             }
 
-            StringBuilder remarks = Constants.StringBuilderPool.Get();
+            if (reader.Name == Constants.MamlDevCodeTag || reader.ReadToFollowing(Constants.MamlDevCodeTag))
+            {
+                code = reader.ReadElementContentAsString().Trim();
+                if (!string.IsNullOrEmpty(code))
+                {
+                    remarks.AppendLine();
+                    if (!code.StartsWith("```powershell", StringComparison.OrdinalIgnoreCase))
+                        _ = remarks.AppendLine("```powershell");
+                    remarks.AppendLine(code);
+                    if (!code.EndsWith("```", StringComparison.OrdinalIgnoreCase))
+                        _ = remarks.AppendLine("```");
+                }
+            }
 
             try
             {
@@ -214,6 +244,7 @@ namespace Microsoft.PowerShell.PlatyPS
                 {
                     if (reader.ReadToDescendant(Constants.MamlParaTag))
                     {
+                        remarks.AppendLine();
                         do
                         {
                             var remarkString = reader.ReadElementContentAsString().Trim();
