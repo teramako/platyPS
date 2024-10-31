@@ -9,7 +9,9 @@ using System.Linq;
 using Microsoft.PowerShell.PlatyPS;
 using Microsoft.PowerShell.PlatyPS.Model;
 using System.Text;
+using Markdig;
 using Markdig.Syntax;
+using System.Text.RegularExpressions;
 
 namespace Microsoft.PowerShell.PlatyPS.MAML
 {
@@ -47,6 +49,11 @@ namespace Microsoft.PowerShell.PlatyPS.MAML
         }
 
         /// <summary>
+        /// detect IndentedCode, FencedCode, Table, UnorderedList or OrderedList
+        /// </summary>
+        private static readonly Regex _makdownBlockReg = new(@"^(?:    |```|>|\||[\-\*]\s|[1-9]*\.)");
+
+        /// <summary>
         /// Convert the CommandHelp object into the serializable XML
         /// </summary>
         public static Command ConvertCommandHelpToMamlCommand(CommandHelp commandHelp)
@@ -55,9 +62,19 @@ namespace Microsoft.PowerShell.PlatyPS.MAML
             command.Details = ConvertCommandDetails(commandHelp);
             if (commandHelp.Description is not null)
             {
-                foreach(string s in commandHelp.Description.Split(new string[] { "\n\n" }, StringSplitOptions.None))
+                foreach (string s in Markdown.Normalize(commandHelp.Description).Split(new string[] { "\n\n" }, StringSplitOptions.None))
                 {
-                    command.Description.Add(s.Replace("\n"," ").Trim());
+                    // don't join lines when the block stars with IndentedCode, FencedCode, Table, UnorderedList or OrderedList
+                    if (_makdownBlockReg.IsMatch(s))
+                    {
+                        command.Description.Add(s);
+                    }
+                    else
+                    {
+                        // XXX: Should we detect hard line break (tailing 2 spaces) ?
+                        //      if should do, we will need to get rid of `TrimEnd()` from CommandHelp's parser
+                        command.Description.Add(s.Replace("\n", " ").Trim());
+                    }
                 }
             }
 
