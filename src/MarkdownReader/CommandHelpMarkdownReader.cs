@@ -1215,12 +1215,12 @@ namespace Microsoft.PowerShell.PlatyPS
                             diagnostics.Add(
                                 new DiagnosticMessage(DiagnosticMessageSource.Parameter, $"{parameterName} found", DiagnosticSeverity.Information, "found in LastChance parse", md[parameterItemIndex].Line + 1)
                             );
-                                parameters.Add(new Parameter(parameterName, description, lastChance));
-                            }
+                            parameters.Add(new Parameter(parameterName, description, lastChance));
                         }
-                        else
-                        {
-                            AddParseError(parameterName, "YAML was not v1 or v2 shape", md[parameterItemIndex].Line);
+                    }
+                    else
+                    {
+                        AddParseError(parameterName, "YAML was not v1 or v2 shape", md[parameterItemIndex].Line);
                         diagnostics.Add(
                             new DiagnosticMessage(DiagnosticMessageSource.Parameter, $"{parameterName} found", DiagnosticSeverity.Error, "YAML Parse Failure", md[parameterItemIndex].Line + 1)
                         );
