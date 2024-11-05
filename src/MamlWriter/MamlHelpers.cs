@@ -199,6 +199,16 @@ namespace Microsoft.PowerShell.PlatyPS.MAML
             {
                 // Set SyntaxParameter's parameter type name for <command:syntaxItem>
                 parameterValue.DataType = syntaxParameterType is null ? parameter.Type : syntaxParameterType;
+                if (syntaxParameterType is null)
+                {
+                    var t = parameter.Type;
+                    parameterValue.DataType = (t.StartsWith("System.Nullable`1[", StringComparison.OrdinalIgnoreCase) && t.EndsWith("]", StringComparison.OrdinalIgnoreCase))
+                        ? t.Substring(18, t.Length - 18 - 1) : t;
+                }
+                else
+                {
+                    parameterValue.DataType = syntaxParameterType;
+                }
                 parameterValue.IsVariableLength = parameter.VariableLength;
                 parameterValue.IsMandatory = true;
             }
