@@ -103,6 +103,22 @@ namespace Microsoft.PowerShell.PlatyPS
                 cmdHelp.Description = ReadDescription(reader);
                 cmdHelp.AddSyntaxItemRange(ReadSyntaxItems(reader));
                 cmdHelp.AddParameterRange(ReadParameters(reader, cmdHelp.Syntax.Count));
+                var syntaxParamDict = new Dictionary<string, Parameter>();
+                foreach (var syntax in cmdHelp.Syntax)
+                {
+                    foreach (var param in syntax.Parameters)
+                    {
+                        syntaxParamDict[param.Name] = param;
+                    }
+                }
+                foreach (var p in cmdHelp.Parameters)
+                {
+                    if (syntaxParamDict.ContainsKey(p.Name)
+                            && syntaxParamDict[p.Name].AcceptedValues.Count > 0)
+                    {
+                        p.AddAcceptedValueRange(syntaxParamDict[p.Name].AcceptedValues);
+                    }
+                }
                 cmdHelp.Inputs.AddRange(ReadInput(reader));
                 cmdHelp.Outputs.AddRange(ReadOutput(reader));
                 cmdHelp.Notes = ReadNotes(reader);
@@ -453,7 +469,7 @@ namespace Microsoft.PowerShell.PlatyPS
                 while (reader.ReadToNextSibling(Constants.MamlCommandParameterTag))
                 {
                     var parameter = ReadParameter(reader.ReadSubtree(), parameterSetCount: -1);
-                    syntaxItem.SyntaxParameters.Add(new SyntaxParameter(parameter));
+                    // syntaxItem.SyntaxParameters.Add(new SyntaxParameter(parameter));
                     try
                     {
                         // This may possibly throw because the position is duplicated.

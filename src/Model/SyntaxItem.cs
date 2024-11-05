@@ -82,7 +82,7 @@ namespace Microsoft.PowerShell.PlatyPS.Model
                 HasCmdletBinding = true;
                 return;
             }
-
+            Parameters.Add(parameter);
             _parameterNames.Add(name);
             _alphabeticOrderParameters.Add(name, parameter);
         }
