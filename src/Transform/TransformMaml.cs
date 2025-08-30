@@ -197,54 +197,75 @@ namespace Microsoft.PowerShell.PlatyPS
             string? title = null;
             string? code = null;
 
-            if (reader.ReadToFollowing(Constants.MamlTitleTag))
-            {
-                title = reader.ReadElementContentAsString().Trim(' ', '-').Replace($"Example {exampleCounter}: ", string.Empty);
-            }
-
-            if (reader.ReadToFollowing(Constants.MamlDevCodeTag))
-            {
-                code = reader.ReadElementContentAsString();
-            }
-
             StringBuilder remarks = Constants.StringBuilderPool.Get();
+            while (reader.Read())
+            {
+                if (reader.NodeType != XmlNodeType.Element)
+                {
+                    continue;
+                }
+                switch (reader.Name)
+                {
+                    case Constants.MamlTitleTag:
+                        title = reader.ReadElementContentAsString()
+                                      .Trim(' ', '-')
+                                      .Replace($"Example {exampleCounter}: ", string.Empty);
+                        continue;
+                    case Constants.MamlIntroductionTag:
+                        if (reader.ReadToDescendant(Constants.MamlParaTag))
+                        {
+                            do
+                            {
+                                string introString = reader.ReadElementContentAsString().Trim();
+                                if (!string.IsNullOrEmpty(introString))
+                                {
+                                    _ = remarks.AppendLine(introString);
+                                }
+                            }
+                            while (reader.ReadToNextSibling(Constants.MamlParaTag));
+                        }
+                        continue;
+                    case Constants.MamlDevCodeTag:
+                        code = reader.ReadElementContentAsString().Trim();
+                        if (!string.IsNullOrEmpty(code))
+                        {
+                            remarks.AppendLine();
+                            if (!code.StartsWith("```powershell", StringComparison.OrdinalIgnoreCase))
+                            {
+                                remarks.AppendLine("```powershell");
+                            }
+                            remarks.AppendLine(code);
+                            if (!code.EndsWith("```", StringComparison.OrdinalIgnoreCase))
+                            {
+                                remarks.AppendLine("```");
+                            }
+                        }
+                        continue;
+                    case Constants.MamlDevRemarksTag:
+                        if (reader.ReadToDescendant(Constants.MamlParaTag))
+                        {
+                            remarks.AppendLine();
+                            do
+                            {
+                                var remarkString = reader.ReadElementContentAsString().Trim();
+                                if (!string.IsNullOrEmpty(remarkString))
+                                {
+                                    remarks.AppendLine(remarkString);
+                                    // remarks.AppendLine();
+                                }
+                            } while (reader.ReadToNextSibling(Constants.MamlParaTag));
+                        }
+                        continue;
+                }
+            }
+
+            if (title == null || code == null)
+            {
+                throw new InvalidDataException("Invalid example data");
+            }
 
             try
             {
-                if (reader.ReadToFollowing(Constants.MamlDevRemarksTag))
-                {
-                    if (reader.ReadToDescendant(Constants.MamlParaTag))
-                    {
-                        do
-                        {
-                            var remarkString = reader.ReadElementContentAsString().Trim();
-                            if (!string.IsNullOrEmpty(remarkString))
-                            {
-                                remarks.AppendLine(remarkString);
-                                // remarks.AppendLine();
-                            }
-                        } while (reader.ReadToNextSibling(Constants.MamlParaTag));
-                    }
-
-                    if (reader.ReadState != ReadState.EndOfFile)
-                    {
-                        reader.ReadEndElement();
-                    }
-                }
-
-                if (title == null || code == null)
-                {
-                    throw new InvalidDataException("Invalid example data");
-                }
-
-                if (!string.IsNullOrEmpty(code))
-                {
-                    remarks.AppendLine();
-                    remarks.AppendLine("```powershell");
-                    remarks.AppendLine(code);
-                    remarks.AppendLine("```");
-                }
-
                 Example exp = new(
                     title,
                     remarks.ToString().Trim()
