@@ -241,6 +241,12 @@ namespace Microsoft.PowerShell.PlatyPS.MAML
                 newParameter.Aliases = string.Join(", ", parameter.Aliases);
             }
 
+            if (parameter.AcceptedValues.Count > 0)
+            {
+                var accesptedValues = parameter.AcceptedValues.Select(val => new ParameterValue() { DataType = val });
+                newParameter.ParameterValueGroup = accesptedValues.ToList();
+            }
+
             return newParameter;
         }
 

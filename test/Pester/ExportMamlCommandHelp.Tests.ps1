@@ -104,6 +104,12 @@ Describe "Export-MamlCommandHelp tests" {
             $xml.SelectNodes('//command:command', $ns).Where({$_.details.name -eq "Out-Null"}).Parameters.parameter.Count | Should -Be 1
         }
 
+        It "Should have the proper parameterValueGroups for Get-Date" {
+            $xml2.SelectNodes('//command:command', $ns2).Where({$_.details.name -eq 'Get-Date'}).
+                  parameters.parameter.Where({$_.name -eq "DisplayHint"}).
+                  parameterValueGroup.parameterValue."#text" | Should -Be 'Date', 'Time', 'DateTime'
+        }
+
         It "Should have the proper number of examples" {
             $xml2.SelectNodes('//command:command', $ns2).Where({$_.details.name -eq "Get-Date"}).examples.example.Count | Should -Be 10
         }
