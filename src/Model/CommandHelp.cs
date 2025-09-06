@@ -19,7 +19,20 @@ namespace Microsoft.PowerShell.PlatyPS.Model
     {
         public OrderedDictionary? Metadata { get; set; }
 
-        public CultureInfo Locale { get; set; }
+        private CultureInfo? _locale = null;
+        public CultureInfo Locale
+        {
+            get
+            {
+                if (_locale is not null)
+                    return _locale;
+
+                // Set locale from metadata. If failed, set invariant language.
+                _locale = CultureInfo.GetCultureInfo(Metadata?["Locale"] as string ?? string.Empty);
+                return _locale;
+            }
+            set => _locale = value;
+        }
 
         public Guid? ModuleGuid { get; set; }
 
@@ -72,7 +85,7 @@ namespace Microsoft.PowerShell.PlatyPS.Model
             Aliases = string.Empty;
             Title = title;
             ModuleName = moduleName;
-            Locale = cultureInfo ?? CultureInfo.GetCultureInfo("en-US");
+            _locale = cultureInfo;
             Syntax = new();
             Parameters = new();
             Inputs = new();
@@ -89,7 +102,6 @@ namespace Microsoft.PowerShell.PlatyPS.Model
         {
             Syntax = new();
             Aliases = string.Empty;
-            Locale = CultureInfo.GetCultureInfo("en-US");
             Synopsis = string.Empty;
             Examples = new();
             Parameters = new();

@@ -15,11 +15,12 @@ Describe "Compare-CommandHelp can find differences" {
     }
 
     It "Should properly identify the number of differences" {
-        $result1.where({$_ -match "are not the same|are different"}).Count | Should -Be 15
+        $result1.where({$_ -match "are not the same|are different"}).Count | Should -Be 16
     }
 
     It "Should properly identify the elements which are different" {
-        $expected = "CommandHelp.Syntax.ParameterSetName", "CommandHelp.Syntax.ParameterNames", "CommandHelp.Syntax.Parameters",
+        $expected = "CommandHelp.Locale",
+            "CommandHelp.Syntax.ParameterSetName", "CommandHelp.Syntax.ParameterNames", "CommandHelp.Syntax.Parameters",
             "CommandHelp.Syntax.ParameterSetName", "CommandHelp.Syntax.ParameterNames", "CommandHelp.Syntax.Parameters",
             "CommandHelp.Syntax.ParameterSetName", "CommandHelp.Syntax.ParameterNames", "CommandHelp.Syntax.Parameters",
             "CommandHelp.Syntax.ParameterSetName", "CommandHelp.Syntax.ParameterNames", "CommandHelp.Syntax.Parameters",
@@ -29,7 +30,8 @@ Describe "Compare-CommandHelp can find differences" {
     }
 
     It "Should be possible to exclude an element from comparison" {
-        $expected = "CommandHelp.Syntax.ParameterSetName", "CommandHelp.Syntax.ParameterNames", "CommandHelp.Syntax.Parameters",
+        $expected = "CommandHelp.Locale",
+            "CommandHelp.Syntax.ParameterSetName", "CommandHelp.Syntax.ParameterNames", "CommandHelp.Syntax.Parameters",
             "CommandHelp.Syntax.ParameterSetName", "CommandHelp.Syntax.ParameterNames", "CommandHelp.Syntax.Parameters",
             "CommandHelp.Syntax.ParameterSetName", "CommandHelp.Syntax.ParameterNames", "CommandHelp.Syntax.Parameters",
             "CommandHelp.Syntax.ParameterSetName", "CommandHelp.Syntax.ParameterNames", "CommandHelp.Syntax.Parameters",
