@@ -22,10 +22,10 @@ namespace Microsoft.PowerShell.PlatyPS.Model
 
         public List<Parameter> Parameters = new();
 
-        private List<string> _parameterNames = new();
+        private HashSet<string> _parameterNames = new();
 
         public ReadOnlyCollection<string> ParameterNames {
-            get => new ReadOnlyCollection<string>(_parameterNames);
+            get => new ReadOnlyCollection<string>(_parameterNames.ToArray());
         }
 
         public ReadOnlyCollection<int> PositionalParameterKeys {
@@ -70,7 +70,7 @@ namespace Microsoft.PowerShell.PlatyPS.Model
             _positionalParameters = new SortedList<int, Parameter>(syntaxItem._positionalParameters);
             _requiredParameters = new SortedList<string, Parameter>(syntaxItem._requiredParameters);
             _alphabeticOrderParameters = new SortedList<string, Parameter>(syntaxItem._alphabeticOrderParameters);
-            _parameterNames = new List<string>(syntaxItem._parameterNames);
+            _parameterNames = new HashSet<string>(syntaxItem._parameterNames);
         }
 
         public void AddParameter(Parameter parameter)
