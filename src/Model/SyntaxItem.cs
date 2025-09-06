@@ -34,6 +34,8 @@ namespace Microsoft.PowerShell.PlatyPS.Model
 
         public bool IsDefaultParameterSet { get; }
 
+        private bool _syntaxParametersAreSorted = true;
+
         public SyntaxItem(CommandHelp commandHelp, string commandName, string parameterSetName, bool isDefaultParameterSet)
         {
             _commandHelp = commandHelp;
@@ -61,6 +63,11 @@ namespace Microsoft.PowerShell.PlatyPS.Model
         /// </summary>
         public void SortParameters()
         {
+            if (_syntaxParametersAreSorted)
+            {
+                return;
+            }
+
             List<SyntaxParameter> sortedList = new();
             List<SyntaxParameter> positionList = new();
             List<SyntaxParameter> mandatoryList = new();
@@ -97,6 +104,7 @@ namespace Microsoft.PowerShell.PlatyPS.Model
             }
 
             _syntaxParameters = sortedList;
+            _syntaxParametersAreSorted = true;
         }
 
         public void AddSyntaxParameter(SyntaxParameter parameter)
@@ -110,6 +118,7 @@ namespace Microsoft.PowerShell.PlatyPS.Model
 
             _parameterNames.Add(name);
             _syntaxParameters.Add(parameter);
+            _syntaxParametersAreSorted = false;
         }
 
         private string GetFormattedSyntaxParameter(string paramName, string paramTypeName, bool isPositional, bool isRequired)
