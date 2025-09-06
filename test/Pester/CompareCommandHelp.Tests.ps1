@@ -15,15 +15,12 @@ Describe "Compare-CommandHelp can find differences" {
     }
 
     It "Should properly identify the number of differences" {
-        $result1.where({$_ -match "are not the same|are different"}).Count | Should -Be 16
+        $result1.where({$_ -match "are not the same|are different"}).Count | Should -Be 8
     }
 
     It "Should properly identify the elements which are different" {
         $expected = "CommandHelp.Locale",
-            "CommandHelp.Syntax.ParameterSetName", "CommandHelp.Syntax.ParameterNames", "CommandHelp.Syntax.Parameters",
-            "CommandHelp.Syntax.ParameterSetName", "CommandHelp.Syntax.ParameterNames", "CommandHelp.Syntax.Parameters",
-            "CommandHelp.Syntax.ParameterSetName", "CommandHelp.Syntax.ParameterNames", "CommandHelp.Syntax.Parameters",
-            "CommandHelp.Syntax.ParameterSetName", "CommandHelp.Syntax.ParameterNames", "CommandHelp.Syntax.Parameters",
+            "CommandHelp.Syntax.ParameterSetName", "CommandHelp.Syntax.ParameterSetName", "CommandHelp.Syntax.ParameterSetName", "CommandHelp.Syntax.ParameterSetName",
             "CommandHelp.Examples.Title", "CommandHelp.Examples.Remarks", "CommandHelp.Diagnostics"
         $observed = $result1.split("`n").Where({$_ -match "are not the same|are different"}).foreach({$_.Substring(2).trim().split()[0]})
         $observed | Should -Be $expected
@@ -31,10 +28,7 @@ Describe "Compare-CommandHelp can find differences" {
 
     It "Should be possible to exclude an element from comparison" {
         $expected = "CommandHelp.Locale",
-            "CommandHelp.Syntax.ParameterSetName", "CommandHelp.Syntax.ParameterNames", "CommandHelp.Syntax.Parameters",
-            "CommandHelp.Syntax.ParameterSetName", "CommandHelp.Syntax.ParameterNames", "CommandHelp.Syntax.Parameters",
-            "CommandHelp.Syntax.ParameterSetName", "CommandHelp.Syntax.ParameterNames", "CommandHelp.Syntax.Parameters",
-            "CommandHelp.Syntax.ParameterSetName", "CommandHelp.Syntax.ParameterNames", "CommandHelp.Syntax.Parameters",
+            "CommandHelp.Syntax.ParameterSetName", "CommandHelp.Syntax.ParameterSetName", "CommandHelp.Syntax.ParameterSetName", "CommandHelp.Syntax.ParameterSetName",
             "CommandHelp.Examples.Title", "CommandHelp.Examples.Remarks"
         $observed = $result2.split("`n").Where({$_ -match "are not the same|are different"}).foreach({$_.Substring(2).trim().split()[0]})
         $observed | Should -Be $expected

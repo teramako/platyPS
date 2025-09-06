@@ -121,7 +121,7 @@ namespace Microsoft.PowerShell.PlatyPS.MAML
 
             if (commandHelp.Parameters is not null)
             {
-                foreach (var parameter in commandHelp.Parameters)
+                foreach (var parameter in commandHelp.Parameters.Values)
                 {
                     command.Parameters.Add(ConvertParameter(parameter));
                 }

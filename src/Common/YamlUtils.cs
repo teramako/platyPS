@@ -237,16 +237,18 @@ namespace Microsoft.PowerShell.PlatyPS
                 help.Notes = string.Empty;
             }
 
-            help.Syntax.AddRange(GetSyntaxFromDictionary(dictionary));
+            help.Syntax.AddRange(GetSyntaxFromDictionary(help, dictionary));
             help.Aliases = dictionary["aliases"] is string aliasStr ? aliasStr : string.Empty;
             help.Examples?.AddRange(GetExamplesFromDictionary(dictionary));
-            help.Parameters.AddRange(GetParametersFromDictionary(dictionary));
+            foreach (var parameter in GetParametersFromDictionary(dictionary))
+            {
+                help.Parameters.Add(parameter.Name, parameter);
+            }
             help.Inputs.AddRange(GetInputsFromDictionary(dictionary));
             help.Outputs.AddRange(GetOutputsFromDictionary(dictionary));
             help.RelatedLinks?.AddRange(GetRelatedLinksFromDictionary(dictionary));
 
             help.HasCmdletBinding = GetHasCmdletBinding(dictionary);
-            help.Syntax.ForEach(s => s.HasCmdletBinding = help.HasCmdletBinding);
             help.HasWorkflowCommonParameters = GetHasWorkflowParameters(dictionary);
 
             if (help.Metadata is not null)
@@ -612,7 +614,7 @@ namespace Microsoft.PowerShell.PlatyPS
             return examples;
         }
 
-        private static List<SyntaxItem> GetSyntaxFromDictionary(OrderedDictionary dictionary)
+        private static List<SyntaxItem> GetSyntaxFromDictionary(CommandHelp commandHelp, OrderedDictionary dictionary)
         {
             List<SyntaxItem> syntaxes = new();
             if (dictionary["syntaxes"] is List<object> syntaxList)
@@ -625,11 +627,11 @@ namespace Microsoft.PowerShell.PlatyPS
                     var pSetName = syntaxDictionary["parameterSetName"].ToString();
                     if (bool.TryParse(syntaxDictionary["isDefault"].ToString(), out var isDefault))
                     {
-                        si = new SyntaxItem(cName, pSetName, isDefault);
+                        si = new SyntaxItem(commandHelp, cName, pSetName, isDefault);
                     }
                     else
                     {
-                        si = new SyntaxItem(cName, pSetName, false);
+                        si = new SyntaxItem(commandHelp, cName, pSetName, false);
                     }
 
                     if (syntaxDictionary["parameters"] is List<object> parameterList)
@@ -641,13 +643,11 @@ namespace Microsoft.PowerShell.PlatyPS
                             if (syntaxParameter is string parameterString)
                             {
                                 SyntaxParameter sp = GetSyntaxParameterFromParameterString(parameterString, ref position);
-                                si.SyntaxParameters.Add(sp);
+                                si.AddSyntaxParameter(sp);
                             }
                         }
                     }
 
-                    // add the parameter name
-                    si.Parameters.ForEach(p => si.AddParameter(p));
                     syntaxes.Add(si);
                 }
             }

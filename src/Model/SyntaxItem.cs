@@ -14,13 +14,16 @@ namespace Microsoft.PowerShell.PlatyPS.Model
     /// </summary>
     public class SyntaxItem : IEquatable<SyntaxItem>
     {
+        private CommandHelp _commandHelp;
+
         public string CommandName { get; }
         public string ParameterSetName { get; }
-        public bool HasCmdletBinding { get; set; }
+        public bool HasCmdletBinding => _commandHelp.HasCmdletBinding;
 
-        public List<SyntaxParameter> SyntaxParameters = new();
+        private List<SyntaxParameter> _syntaxParameters = new();
+        public ReadOnlyCollection<SyntaxParameter> SyntaxParameters => _syntaxParameters.AsReadOnly();
 
-        public List<Parameter> Parameters = new();
+        public SortedList<string, Parameter> Parameters => _commandHelp.Parameters;
 
         private HashSet<string> _parameterNames = new();
 
@@ -28,30 +31,15 @@ namespace Microsoft.PowerShell.PlatyPS.Model
             get => new ReadOnlyCollection<string>(_parameterNames.ToArray());
         }
 
-        public ReadOnlyCollection<int> PositionalParameterKeys {
-            get => new ReadOnlyCollection<int>(_positionalParameters.Keys);
-        }
-
-        // Sort parameters by position
-        private SortedList<int, Parameter> _positionalParameters;
-
-        // Sort parameters by if they are Required by name
-        private SortedList<string, Parameter> _requiredParameters;
-
-        // Sort parameters by name
-        private SortedList<string, Parameter> _alphabeticOrderParameters;
 
         public bool IsDefaultParameterSet { get; }
 
-        public SyntaxItem(string commandName, string parameterSetName, bool isDefaultParameterSet)
+        public SyntaxItem(CommandHelp commandHelp, string commandName, string parameterSetName, bool isDefaultParameterSet)
         {
+            _commandHelp = commandHelp;
             CommandName = commandName;
             ParameterSetName = parameterSetName;
             IsDefaultParameterSet = isDefaultParameterSet;
-
-            _positionalParameters = new SortedList<int, Parameter>();
-            _requiredParameters = new SortedList<string, Parameter>();
-            _alphabeticOrderParameters = new SortedList<string, Parameter>();
         }
 
         /// <summary>
@@ -60,32 +48,12 @@ namespace Microsoft.PowerShell.PlatyPS.Model
         /// <param name="syntaxItem">The syntax item to copy.</param>
         public SyntaxItem(SyntaxItem syntaxItem)
         {
+            _commandHelp = syntaxItem._commandHelp;
             CommandName = syntaxItem.CommandName;
             ParameterSetName = syntaxItem.ParameterSetName;
             IsDefaultParameterSet = syntaxItem.IsDefaultParameterSet;
-            SyntaxParameters = new List<SyntaxParameter>(syntaxItem.SyntaxParameters);
-            HasCmdletBinding = syntaxItem.HasCmdletBinding;
-            Parameters = new List<Parameter>(syntaxItem.Parameters);
-
-            _positionalParameters = new SortedList<int, Parameter>(syntaxItem._positionalParameters);
-            _requiredParameters = new SortedList<string, Parameter>(syntaxItem._requiredParameters);
-            _alphabeticOrderParameters = new SortedList<string, Parameter>(syntaxItem._alphabeticOrderParameters);
+            _syntaxParameters = new List<SyntaxParameter>(syntaxItem.SyntaxParameters);
             _parameterNames = new HashSet<string>(syntaxItem._parameterNames);
-        }
-
-        public void AddParameter(Parameter parameter)
-        {
-            string name = parameter.Name;
-
-            if (Constants.CommonParametersNames.Contains(name))
-            {
-                HasCmdletBinding = true;
-                return;
-            }
-
-            Parameters.Add(parameter);
-            _parameterNames.Add(name);
-            _alphabeticOrderParameters.Add(name, parameter);
         }
 
         /// <summary>
@@ -128,20 +96,20 @@ namespace Microsoft.PowerShell.PlatyPS.Model
                 sortedList.AddRange(namedList);
             }
 
-            SyntaxParameters = sortedList;
+            _syntaxParameters = sortedList;
         }
 
-        public void AddParameter(SyntaxParameter parameter)
+        public void AddSyntaxParameter(SyntaxParameter parameter)
         {
             string name = parameter.ParameterName;
 
-            if (Constants.CommonParametersNames.Contains(name))
+            if (Constants.CommonParametersNames.Contains(name) && HasCmdletBinding)
             {
-                HasCmdletBinding = true;
                 return;
             }
 
             _parameterNames.Add(name);
+            _syntaxParameters.Add(parameter);
         }
 
         private string GetFormattedSyntaxParameter(string paramName, string paramTypeName, bool isPositional, bool isRequired)
@@ -186,19 +154,13 @@ namespace Microsoft.PowerShell.PlatyPS.Model
 
         public IEnumerable<Parameter> GetParametersInOrder()
         {
-            foreach (KeyValuePair<int, Parameter> kv in _positionalParameters)
+            SortParameters();
+            foreach (var syntaxParam in SyntaxParameters)
             {
-                yield return kv.Value;
-            }
-
-            foreach (KeyValuePair<string, Parameter> kv in _requiredParameters)
-            {
-                yield return kv.Value;
-            }
-
-            foreach (KeyValuePair<string, Parameter> kv in _alphabeticOrderParameters)
-            {
-                yield return kv.Value;
+                if (Parameters.TryGetValue(syntaxParam.ParameterName, out var parameter))
+                {
+                    yield return parameter;
+                }
             }
         }
 

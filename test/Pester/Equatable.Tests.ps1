@@ -134,8 +134,8 @@ Describe "Test IEquatable" {
         }
 
         It "Altering the description in a parameter will cause the objects to be different" {
-            $parameter1 = $CommandHelpObject1.Parameters
-            $parameter2 = $CommandHelpObject2.Parameters
+            $parameter1 = $CommandHelpObject1.Parameters.Values
+            $parameter2 = $CommandHelpObject2.Parameters.Values
             $parameter2[0].Description = "New Description"
             $parameter1[0] | Should -Not -Be $parameter2[0]
             $CommandHelpObject1 | Should -Not -Be $CommandHelpObject2

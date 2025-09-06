@@ -59,7 +59,7 @@ namespace Microsoft.PowerShell.PlatyPS.Model
 
         public List<Example>? Examples { get; private set; }
 
-        public List<Parameter> Parameters { get; private set; }
+        public SortedList<string, Parameter> Parameters { get; }
 
         public List<InputOutput> Inputs { get; private set; }
 
@@ -143,7 +143,7 @@ namespace Microsoft.PowerShell.PlatyPS.Model
             Notes = help.Notes;
             OnlineVersionUrl = help.OnlineVersionUrl;
             Outputs = new List<InputOutput>(help.Outputs);
-            Parameters = new List<Parameter>(help.Parameters);
+            Parameters = new SortedList<string, Parameter>(help.Parameters);
             RelatedLinks = new List<Links>(help.RelatedLinks);
             SchemaVersion = help.SchemaVersion;
             Synopsis = help.Synopsis;
@@ -213,53 +213,20 @@ namespace Microsoft.PowerShell.PlatyPS.Model
 
         internal void AddParameter(Parameter parameter)
         {
-            Parameters.Add(parameter);
-            foreach(var parameterSet in parameter.ParameterSets)
-            {
-                if (string.Compare(parameterSet.Name, "(All)", StringComparison.OrdinalIgnoreCase) == 0)
-                {
-                    foreach(var syntax in SyntaxDictionary.Values)
-                    {
-                        try
-                        {
-                            syntax.AddParameter(parameter);
-                        }
-                        catch
-                        {
-                            // This is okay, we just don't want to add it to the syntax item if it's already there.
-                        }
-                    }
-                }
-                else if (SyntaxDictionary.TryGetValue(parameterSet.Name, out var syntaxItem))
-                {
-                    try
-                    {
-                        syntaxItem.AddParameter(parameter);
-                    }
-                    catch
-                    {
-                        // This is okay, we just don't want to add it to the syntax item if it's already there.
-                    }
-                }
-            }
+            Parameters.Add(parameter.Name, parameter);
         }
 
         public bool TryGetParameter(string name, out Parameter? parameter)
         {
-            var param = Parameters.Find(p => string.Compare(p.Name, name, StringComparison.CurrentCultureIgnoreCase) == 0);
-            if (param is not null)
-            {
-                parameter = param;
-                return true;
-            }
-
-            parameter = null;
-            return false;
+            return Parameters.TryGetValue(name, out parameter);
         }
 
         internal void AddParameterRange(IEnumerable<Parameter> parameters)
         {
-            Parameters.AddRange(parameters);
+            foreach (var parameter in parameters)
+            {
+                Parameters.Add(parameter.Name, parameter);
+            }
         }
 
         internal void AddInputItem(InputOutput inputItem)
@@ -351,7 +318,7 @@ namespace Microsoft.PowerShell.PlatyPS.Model
                                     {
                                         if (syntaxItem is IDictionary<string, object> syntaxDictionary)
                                         {
-                                            var syntaxItemModel = new SyntaxItem("name","description", false);
+                                            var syntaxItemModel = new SyntaxItem(help, "name", "description", false);
                                         }
                                     }
                                 }

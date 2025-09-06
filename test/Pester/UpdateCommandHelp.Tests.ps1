@@ -49,11 +49,11 @@ Describe "Tests for Update-CommandHelp" {
         $chCopy = [Microsoft.PowerShell.PlatyPS.Model.CommandHelp]::new($ch)
         $chCopy.Parameters.RemoveAt(0)
         $chCopy.Parameters.Count | Should -Be 1
-        $chCopy.Parameters[0].Name | Should -Be "process"
+        $chCopy.Parameters.Values[0].Name | Should -Be "process"
         $helpFile = $chCopy | Export-MarkdownCommandHelp -output $TESTDRIVE -Force
         $chUpdate = $helpFile | Update-CommandHelp
         $chUpdate.Parameters.Count | Should -Be 2
-        $chUpdate.Parameters.Name | Should -Be @("file", "process")
+        $chUpdate.Parameters.Values.Name | Should -Be @("file", "process")
     }
 
     It "Missing Inputs should be added" {

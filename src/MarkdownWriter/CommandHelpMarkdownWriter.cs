@@ -141,12 +141,9 @@ namespace Microsoft.PowerShell.PlatyPS.MarkdownWriter
             sb.AppendLine(Constants.mdParametersHeader);
             sb.AppendLine();
 
-            // Sort the parameter by name before writing
-            help.Parameters?.Sort((u1, u2) => u1.Name.CompareTo(u2.Name));
-
-            if (help.Parameters?.Count > 0)
+            if (help.Parameters.Count > 0)
             {
-                foreach (Parameter param in help.Parameters)
+                foreach (Parameter param in help.Parameters.Values)
                 {
                     ParameterMetadataV2 v2 = param.GetMetadata();
 

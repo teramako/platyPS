@@ -157,12 +157,9 @@ namespace Microsoft.PowerShell.PlatyPS.YamlWriter
         {
             sb.AppendLine(Constants.ParametersYamlHeader);
 
-            // Sort the parameter by name before writing
-            help.Parameters?.Sort((u1, u2) => u1.Name.CompareTo(u2.Name));
-
-            if (help.Parameters?.Count > 0)
+            if (help.Parameters.Count > 0)
             {
-                sb.AppendLine(YamlUtils.SerializeElement(help.Parameters));
+                sb.AppendLine(YamlUtils.SerializeElement(help.Parameters.Values));
 
                 if (help.HasCmdletBinding)
                 {

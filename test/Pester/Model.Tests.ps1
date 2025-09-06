@@ -18,7 +18,7 @@ Describe "Model type tests" {
             @{ type = 'System.String'; Nullable = $false; Name = "Aliases" }
             @{ type = 'System.String'; Nullable = $true; Name = "Description" }
             @{ type = 'System.Collections.Generic.List`1[Microsoft.PowerShell.PlatyPS.Model.Example]'; Nullable = $true; Name = "Examples" }
-            @{ type = 'System.Collections.Generic.List`1[Microsoft.PowerShell.PlatyPS.Model.Parameter]'; Nullable = $false; Name = "Parameters" }
+            @{ type = 'System.Collections.Generic.SortedList`2[System.String,Microsoft.PowerShell.PlatyPS.Model.Parameter]'; Nullable = $false; Name = "Parameters" }
             @{ type = 'System.Collections.Generic.List`1[Microsoft.PowerShell.PlatyPS.Model.InputOutput]'; Nullable = $true; Name = "Inputs" }
             @{ type = 'System.Collections.Generic.List`1[Microsoft.PowerShell.PlatyPS.Model.InputOutput]'; Nullable = $true; Name = "Outputs" }
             @{ type = 'System.Collections.Generic.List`1[Microsoft.PowerShell.PlatyPS.Model.Links]'; Nullable = $true; Name = "RelatedLinks" }

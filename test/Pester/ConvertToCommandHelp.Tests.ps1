@@ -81,8 +81,8 @@ Describe "New-CommandHelp tests" {
             }
         ) {
             param ($Name, $type)
-            $ch.Parameters.Name | Should -Contain $Name
-            $ch.Parameters.Where({$_.name -eq $Name}).Type | Should -Be $type
+            $ch.Parameters.Keys | Should -Contain $Name
+            $ch.Parameters[$Name].Type | Should -Be $type
         }
 
         # list retrieved from get-command
@@ -106,12 +106,12 @@ Describe "New-CommandHelp tests" {
             @{ Name = 'Verb'; alias = '' }
         ) {
             param ($Name, $alias)
-            [string]($ch.Parameters.Where({$_.name -eq $Name}).Aliases) | Should -Be $alias
+            [string]($ch.Parameters[$Name].Aliases) | Should -Be $alias
         }
 
         It "Should have the same parameter sets (excluding '(All)')" -Skip:($PSVersionTable.PSVersion.Major -eq 5) {
             $expected = $cmd.ParameterSets.Name | Sort-Object
-            $observed = $ch.Parameters.ParameterSets.Name | Sort-Object -Unique | Where-Object { $_ -ne "(All)" }
+            $observed = $ch.Parameters.Values.ParameterSets.Name | Sort-Object -Unique | Where-Object { $_ -ne "(All)" }
             $observed | Should -Be $expected
         }
         It "Should have the proper parameters in parameterset '<ParameterSetName>'" -Skip:($PSVersionTable.PSVersion.Major -eq 5) -TestCases @(
@@ -119,7 +119,7 @@ Describe "New-CommandHelp tests" {
             @{ ParameterSetName = 'AllCommandSet'; Parameters = 'All:ArgumentList:CommandType:FullyQualifiedModule:FuzzyMinimumDistance:ListImported:Module:Name:ParameterName:ParameterType:ShowCommandInfo:Syntax:TotalCount:UseAbbreviationExpansion:UseFuzzyMatching' }
         ) {
             param ($ParameterSetName, $Parameters)
-            $observedParameters = ($ch.parameters.Where({$_.parametersets.Name -match "$ParameterSetName|\(All\)"})|sort-object name).name -join ":"
+            $observedParameters = ($ch.Parameters.Values.Where({$_.ParameterSets.Name -match "$ParameterSetName|\(All\)"})|Sort-Object name).Name -join ":"
             $observedParameters | Should -Be $Parameters
         }
 
@@ -132,7 +132,7 @@ Describe "New-CommandHelp tests" {
             @{ PropertyName = "ValueFromRemainingArguments"; ExpectedValue = $False }
         ) {
             param ($PropertyName, $ExpectedValue )
-            $pSet = $ch.parameters.Where({$_.Name -eq "All"}).ParameterSets[0]
+            $pSet = $ch.Parameters.Values.Where({$_.Name -eq "All"}).ParameterSets[0]
             $pSet.$propertyName | Should -Be $ExpectedValue
         }
     }
@@ -211,11 +211,7 @@ Describe "New-CommandHelp tests" {
         }
 
         It "Parameter in Parameters should have proper accepted values" {
-            $ch.Parameters.Where({$_.Name -eq "CommandType"}).AcceptedValues | Should -Be $expectedValues
-        }
-
-        It "Parameter in Syntax should have proper accepted values" {
-            $ch.Syntax.Parameters.Where({$_.Name -eq "CommandType"}).AcceptedValues | Should -Be $expectedValues
+            $ch.Parameters["CommandType"].AcceptedValues | Should -Be $expectedValues
         }
     }
 }

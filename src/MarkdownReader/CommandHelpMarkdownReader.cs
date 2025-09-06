@@ -251,7 +251,7 @@ namespace Microsoft.PowerShell.PlatyPS
             }
 
             List<DiagnosticMessage> syntaxDiagnostics = new();
-            commandHelp.AddSyntaxItemRange(GetSyntaxFromMarkdown(markdownContent, out syntaxDiagnostics));
+            commandHelp.AddSyntaxItemRange(GetSyntaxFromMarkdown(commandHelp, markdownContent, out syntaxDiagnostics));
             if (syntaxDiagnostics is not null && syntaxDiagnostics.Count > 0)
             {
                 syntaxDiagnostics.ForEach(d => commandHelp.Diagnostics.TryAddDiagnostic(d));
@@ -285,7 +285,6 @@ namespace Microsoft.PowerShell.PlatyPS
             {
                 commandHelp.AddParameter(parameter);
             }
-            commandHelp.Parameters.Sort((x,y) => x.Name.CompareTo(y.Name));
 
             if (parameterDiagnostics is not null && parameterDiagnostics.Count > 0)
             {
@@ -576,7 +575,7 @@ namespace Microsoft.PowerShell.PlatyPS
             return markdownContent.GetStringFromAst(end).Trim();
         }
 
-        internal static List<SyntaxItem> GetSyntaxFromMarkdown(ParsedMarkdownContent markdownContent, out List<DiagnosticMessage> diagnostics)
+        internal static List<SyntaxItem> GetSyntaxFromMarkdown(CommandHelp commandHelp, ParsedMarkdownContent markdownContent, out List<DiagnosticMessage> diagnostics)
         {
             diagnostics = new List<DiagnosticMessage>();
             var start = markdownContent.FindHeader(2, "SYNTAX");
@@ -598,7 +597,7 @@ namespace Microsoft.PowerShell.PlatyPS
                 if (markdownContent.Peek() is FencedCodeBlock fcb)
                 {
                     var rawSyntax = fcb.Lines.ToString();
-                    var si = CreateSyntaxFromText(rawSyntax, "Default", true);
+                    var si = CreateSyntaxFromText(commandHelp, rawSyntax, "Default", true);
                     syntax.Add(si);
                 }
 
@@ -628,7 +627,7 @@ namespace Microsoft.PowerShell.PlatyPS
                     if (markdownContent.GetCurrent() is FencedCodeBlock fcb)
                     {
                         var rawSyntax = fcb.Lines.ToString();
-                        var si = CreateSyntaxFromText(rawSyntax, parameterSetName, isDefault);
+                        var si = CreateSyntaxFromText(commandHelp, rawSyntax, parameterSetName, isDefault);
                         diagnostics.Add(new DiagnosticMessage(DiagnosticMessageSource.Syntax, "Syntax found", DiagnosticSeverity.Information, si.ToStringWithWrap(), fcb.Line));
                         syntax.Add(si);
                     }
@@ -638,13 +637,16 @@ namespace Microsoft.PowerShell.PlatyPS
             return syntax;
         }
 
-        private static SyntaxItem CreateSyntaxFromText(string text, string pSetName, bool isDefault)
+        private static SyntaxItem CreateSyntaxFromText(CommandHelp commandHelp, string text, string pSetName, bool isDefault)
         {
             var spaceIndex = text.IndexOf(" ");
             var commandName = spaceIndex < 0 ? text : text.Substring(0, spaceIndex);
-            var si = new SyntaxItem(commandName, pSetName, isDefault);
-            si.SyntaxParameters = GetSyntaxParameters(text);
-            si.HasCmdletBinding = text.IndexOf("CommonParameters", StringComparison.CurrentCultureIgnoreCase) != -1 ? true : false;
+            commandHelp.HasCmdletBinding = text.IndexOf("CommonParameters", StringComparison.CurrentCultureIgnoreCase) != -1 ? true : false;
+            var si = new SyntaxItem(commandHelp, commandName, pSetName, isDefault);
+            foreach (var syntaxParam in GetSyntaxParameters(text))
+            {
+                si.AddSyntaxParameter(syntaxParam);
+            }
             return si;
         }
 

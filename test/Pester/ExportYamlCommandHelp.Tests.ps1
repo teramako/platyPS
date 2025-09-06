@@ -138,7 +138,7 @@ Describe "Export-YamlCommandHelp tests" {
         BeforeAll {
             # must remove the common parameters from the yaml representation
             $observedParameters = $yamlDict['parameters'] | Where-Object {$_['name'] -ne "CommonParameters"}
-            $expectedParameters = $ch.Parameters
+            $expectedParameters = $ch.Parameters.Values
         }
 
         It "Should have the proper number of parameters" {
@@ -146,7 +146,7 @@ Describe "Export-YamlCommandHelp tests" {
         }
 
         It "Should preserve the parameter metadata for '<Name>'" -TestCases $(
-            $ch.Parameters | Foreach-Object {
+            $ch.Parameters.Values | Foreach-Object {
                 @{ Name = $_.Name; Type = $_.Type ; Description = $_.Description; DefaultValue = $_.DefaultValue; DontShow = $_.DontShow; ParameterSets = $_.ParameterSets }
             }
         ) {
@@ -168,7 +168,7 @@ Describe "Export-YamlCommandHelp tests" {
             $cmd = Import-MarkdownCommandHelp -Path "$PSScriptRoot/assets/Resolve-DnsName.md"
             $yamlFile = $cmd | Export-YamlCommandHelp -outputfolder $TestDrive -Force
             $yamlDict = Import-YamlCommandHelp $yamlFile.FullName
-            $yamlDict.Parameters[-1].AcceptedValues | Should -Contain "'NULL'"
+            $yamlDict.Parameters.Values[-1].AcceptedValues | Should -Contain "'NULL'"
         }
     }
 

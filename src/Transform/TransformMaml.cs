@@ -102,24 +102,8 @@ namespace Microsoft.PowerShell.PlatyPS
                 cmdHelp = new(reader.ReadElementContentAsString(), moduleName, Settings.Locale);
                 cmdHelp.Synopsis = ReadSynopsis(reader) ?? string.Empty;
                 cmdHelp.Description = ReadDescription(reader);
-                cmdHelp.AddSyntaxItemRange(ReadSyntaxItems(reader));
+                cmdHelp.AddSyntaxItemRange(ReadSyntaxItems(cmdHelp, reader));
                 cmdHelp.AddParameterRange(ReadParameters(reader, cmdHelp.Syntax.Count));
-                var syntaxParamDict = new Dictionary<string, Parameter>();
-                foreach (var syntax in cmdHelp.Syntax)
-                {
-                    foreach (var param in syntax.Parameters)
-                    {
-                        syntaxParamDict[param.Name] = param;
-                    }
-                }
-                foreach (var p in cmdHelp.Parameters)
-                {
-                    if (syntaxParamDict.ContainsKey(p.Name)
-                            && syntaxParamDict[p.Name].AcceptedValues.Count > 0)
-                    {
-                        p.AddAcceptedValueRange(syntaxParamDict[p.Name].AcceptedValues);
-                    }
-                }
                 cmdHelp.Inputs.AddRange(ReadInput(reader));
                 cmdHelp.Outputs.AddRange(ReadOutput(reader));
                 cmdHelp.Notes = ReadNotes(reader);
@@ -128,11 +112,15 @@ namespace Microsoft.PowerShell.PlatyPS
                 cmdHelp.ModuleGuid = Settings.ModuleGuid;
                 // In maml, a parameter which does not have the common parameters, which actually have a parameter named "NoCommonParameter".
                 // We can use that to set cmdlet binding.
-                cmdHelp.HasCmdletBinding = ! cmdHelp.Parameters.Any(p => string.Compare(p.Name, MAML.Constants.NoCommonParameter, true) == 0);
+                cmdHelp.HasCmdletBinding = ! cmdHelp.Parameters.Keys.Any(p => string.Compare(p, MAML.Constants.NoCommonParameter, true) == 0);
                 // remove the parameter which is not a parameter.
                 if (! cmdHelp.HasCmdletBinding)
                 {
-                    cmdHelp.Parameters.RemoveAll(p => string.Compare(p.Name, MAML.Constants.NoCommonParameter, true) == 0);
+                    var names = cmdHelp.Parameters.Keys.Where(p => string.Compare(p, MAML.Constants.NoCommonParameter, true) == 0).ToArray();
+                    foreach (var name in names)
+                    {
+                        cmdHelp.Parameters.Remove(name);
+                    }
                 }
 
                 cmdHelp.Metadata = MetadataUtils.GetCommandHelpBaseMetadata(cmdHelp);
@@ -413,7 +401,7 @@ namespace Microsoft.PowerShell.PlatyPS
             return parameters;
         }
 
-        private Collection<SyntaxItem> ReadSyntaxItems(XmlReader reader)
+        private Collection<SyntaxItem> ReadSyntaxItems(CommandHelp commandHelp, XmlReader reader)
         {
             Collection<SyntaxItem> items = new();
 
@@ -427,7 +415,7 @@ namespace Microsoft.PowerShell.PlatyPS
                     {
                         var unnamedParameterSetName = string.Format(Constants.UnnamedParameterSetTemplate, unnamedParameterSetIndex);
 
-                        var syn = ReadSyntaxItem(reader.ReadSubtree(), unnamedParameterSetName);
+                        var syn = ReadSyntaxItem(commandHelp, reader.ReadSubtree(), unnamedParameterSetName);
 
                         if (syn is not null)
                         {
@@ -446,13 +434,14 @@ namespace Microsoft.PowerShell.PlatyPS
             return items;
         }
 
-        private SyntaxItem? ReadSyntaxItem(XmlReader reader, string unnamedParameterSetName)
+        private SyntaxItem? ReadSyntaxItem(CommandHelp commandHelp, XmlReader reader, string unnamedParameterSetName)
         {
             if (reader.ReadToDescendant(Constants.MamlNameTag))
             {
                 string commandName = reader.ReadElementContentAsString();
 
                 SyntaxItem syntaxItem = new SyntaxItem(
+                    commandHelp,
                     commandName,
                     unnamedParameterSetName,
                     isDefaultParameterSet: false);
@@ -460,39 +449,7 @@ namespace Microsoft.PowerShell.PlatyPS
                 while (reader.ReadToNextSibling(Constants.MamlCommandParameterTag))
                 {
                     var parameter = ReadParameter(reader.ReadSubtree(), parameterSetCount: -1);
-                    // syntaxItem.SyntaxParameters.Add(new SyntaxParameter(parameter));
-                    try
-                    {
-                        // This may possibly throw because the position is duplicated.
-                        // This is because we don't have a way to disambiguate between a positional parameter
-                        // in one parameter set and a non-positional parameter in another parameter set.
-                        // In this case, we will try to add the parameter with a negative position to show we
-                        // could not assign it appropriately.
-                        syntaxItem.AddParameter(parameter);
-                        syntaxItem.SyntaxParameters.Add(new SyntaxParameter(parameter));
-                    }
-                    catch
-                    {
-                        int minKey = syntaxItem.PositionalParameterKeys.Min(x => x);
-                        if (minKey >= 0)
-                        {
-                            minKey = -1;
-                        }
-                        else
-                        {
-                            minKey--;
-                        }
-
-                        parameter.ParameterSets.ForEach(x => x.Position = minKey.ToString());
-                        try
-                        {
-                            syntaxItem.AddParameter(parameter);
-                        }
-                        catch (Exception exception)
-                        {
-                            throw new InvalidOperationException($"Error adding parameter '{parameter.Name}' to syntax item {commandName}", exception);
-                        }
-                    }
+                    syntaxItem.AddSyntaxParameter(new SyntaxParameter(parameter));
                 }
 
                 foreach(var paramName in syntaxItem.ParameterNames)

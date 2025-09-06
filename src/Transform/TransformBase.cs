@@ -60,7 +60,7 @@ namespace Microsoft.PowerShell.PlatyPS
             cmdHelp.OnlineVersionUrl = Settings.OnlineVersionUrl ?? cmdHelp.Metadata["HelpUri"] as string;
             cmdHelp.SchemaVersion = cmdHelp.Metadata["PlatyPS schema version"] as string ?? string.Empty;
             cmdHelp.Synopsis = GetSynopsis(helpItem, addDefaultStrings);
-            cmdHelp.AddSyntaxItemRange(GetSyntaxItem(commandInfo, helpItem));
+            cmdHelp.AddSyntaxItemRange(GetSyntaxItem(cmdHelp, commandInfo, helpItem));
             cmdHelp.Description = GetDescription(helpItem, addDefaultStrings).Trim();
             cmdHelp.AddExampleItemRange(GetExamples(helpItem, addDefaultStrings));
             var parameters = GetParameters(commandInfo, helpItem, addDefaultStrings);
@@ -350,7 +350,7 @@ namespace Microsoft.PowerShell.PlatyPS
             return links;
         }
 
-        protected IEnumerable<SyntaxItem> GetSyntaxItem(CommandInfo? cmdletInfo, dynamic? helpItem)
+        protected IEnumerable<SyntaxItem> GetSyntaxItem(CommandHelp commandHelp, CommandInfo? cmdletInfo, dynamic? helpItem)
         {
             List<SyntaxItem> syntaxItems = new();
 
@@ -361,13 +361,13 @@ namespace Microsoft.PowerShell.PlatyPS
 
             foreach (CommandParameterSetInfo parameterSetInfo in cmdletInfo.ParameterSets)
             {
-                SyntaxItem syn = new(cmdletInfo.Name, parameterSetInfo.Name, parameterSetInfo.IsDefault);
+                SyntaxItem syn = new(commandHelp, cmdletInfo.Name, parameterSetInfo.Name, parameterSetInfo.IsDefault);
 
                 // Take the positional parameters first, and order them by position.
                 foreach (CommandParameterInfo paramInfo in parameterSetInfo.Parameters.Where(p => p.Position != int.MinValue).OrderBy(p => p.Position))
                 {
                     if (IsNotCommonParameter(paramInfo.Name)) {
-                        syn.SyntaxParameters.Add(
+                        syn.AddSyntaxParameter(
                             new SyntaxParameter(
                                 paramInfo.Name,
                                 GetParameterTypeNameForSyntax(paramInfo.ParameterType, paramInfo.Attributes),
@@ -377,8 +377,6 @@ namespace Microsoft.PowerShell.PlatyPS
                                 string.Compare(paramInfo.ParameterType.Name, "SwitchParameter", true) == 0)
                         );
                     }
-                    Parameter param = GetParameterInfo(cmdletInfo, helpItem, paramInfo);
-                    syn.AddParameter(param);
                 }
 
                 // now take the named parameters.
@@ -392,10 +390,8 @@ namespace Microsoft.PowerShell.PlatyPS
                             paramInfo.IsMandatory,
                             paramInfo.Position != int.MinValue,
                             string.Compare(paramInfo.ParameterType.Name, "SwitchParameter", true) == 0);
-                        syn.SyntaxParameters.Add(sParm);
+                        syn.AddSyntaxParameter(sParm);
                     }
-                    Parameter param = GetParameterInfo(cmdletInfo, helpItem, paramInfo);
-                    syn.AddParameter(param);
                 }
 
                 syntaxItems.Add(syn);

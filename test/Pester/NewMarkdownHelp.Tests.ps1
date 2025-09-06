@@ -197,7 +197,7 @@ Describe 'New-MarkdownCommandHelp' {
         }
 
         It 'Should have identified an alias for the "Date" parameter' {
-            $helpInfo.Parameters.Where({$_.name -eq "Date"}).Aliases | Should -Be ($cmdInfo.Parameters['Date'].Aliases)
+            $helpInfo.Parameters['Date'].Aliases | Should -Be ($cmdInfo.Parameters['Date'].Aliases)
         }
 
     }
@@ -350,10 +350,10 @@ Write-Host 'Hello World!'
         $content = Import-MarkdownCommandHelp $file
 
         It 'generates markdown with correct parameter set names' {
-            $content.Parameters.ParameterSets.Count | Should -Be 3
-            $content.Parameters[0].ParameterSets[0].Name | Should -Be "(All)"
-            $content.Parameters[1].ParameterSets[0].Name | Should -Be "First"
-            $content.Parameters[2].ParameterSets[0].Name | Should -Be "Second"
+            $content.Parameters.Values.ParameterSets.Count | Should -Be 3
+            $content.Parameters.Values[0].ParameterSets[0].Name | Should -Be "(All)"
+            $content.Parameters.Values[1].ParameterSets[0].Name | Should -Be "First"
+            $content.Parameters.Values[2].ParameterSets[0].Name | Should -Be "Second"
         }
 
         It 'generates markdown with correct synopsis' {
@@ -361,16 +361,16 @@ Write-Host 'Hello World!'
         }
 
         It 'generates markdown with correct help description specified by HelpMessage attribute' {
-            $content.Parameters.Where({$_.Name -eq "First"}).Description | Should -Be "First parameter help description"
+            $content.Parameters["First"].Description | Should -Be "First parameter help description"
         }
 
         It 'generates markdown with correct help description specified by comment-based help' {
-            $content.Parameters.Where({$_.Name -eq "Second"}).Description | Should -Be "Second parameter help description"
+            $content.Parameters["Second"].Description | Should -Be "Second parameter help description"
         }
 
         It 'generates markdown with placeholder for parameter with no description' {
             $expectedString = "{{ Fill Common Description }}"
-            $content.Parameters.Where({$_.Name -eq "Common"}).Description | Should -Be $expectedString
+            $content.Parameters["Common"].Description | Should -Be $expectedString
         }
 
         It 'Description can contain multiple code blocks and text' {
@@ -556,8 +556,8 @@ Write-Host 'Hello World!'
             $expectedSyntax = 'Get-Alpha [[-CCC] <string>] [[-ddd] <int>] [-WhatIf] [<CommonParameters>]'
             $file = New-MarkdownCommandHelp -Command (get-command Get-Alpha) -OutputFolder "$TestDrive/alpha" -Force -AbbreviateParameterTypeName
             $ch = Import-MarkdownCommandHelp $file
-            $ch.Parameters.Name | Should -Be $expectedParameterNames
-            $ch.Parameters.Type | Should -Be $expectedParameterTypes
+            $ch.Parameters.Keys| Should -Be $expectedParameterNames
+            $ch.Parameters.Values.Type | Should -Be $expectedParameterTypes
             $ch.Syntax[0].ToString() | Should -Be $expectedSyntax
         }
     }

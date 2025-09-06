@@ -187,8 +187,8 @@ Describe 'Import-MarkdownCommandHelp Tests' {
                 @{ Offset = 21; Name = 'System'; Type = 'System.Management.Automation.SwitchParameter' }
         ) {
             param ($offset, $name, $type)
-            $ch.Parameters[$offset].Name | Should -Be $name
-            $ch.Parameters[$offset].Type | Should -Be $Type
+            $ch.Parameters.Values[$offset].Name | Should -Be $name
+            $ch.Parameters.Values[$offset].Type | Should -Be $Type
         }
     }
 

@@ -60,7 +60,10 @@ namespace Microsoft.PowerShell.PlatyPS
             if (MergeUtils.TryGetMergedParameters(helpCopy.Parameters, fromCmdlet.Parameters, out var mergedParametersList, out var paramDiagnostics))
             {
                 helpCopy.Parameters.Clear();
-                helpCopy.Parameters.AddRange(mergedParametersList);
+                foreach (var kv in mergedParametersList)
+                {
+                    helpCopy.Parameters.Add(kv.Key, kv.Value);
+                }
             }
 
             // We add the diagnostics even if there were no changes to the parameters.
@@ -160,7 +163,10 @@ namespace Microsoft.PowerShell.PlatyPS
         /// <param name="mergedParameters"></param>
         /// <param name="diagnosticMessages"></param>
         /// <returns>boolean true if we creaetd the new parameters</returns>
-        internal static bool TryGetMergedParameters(List<Parameter>fromHelp, List<Parameter>fromCommand, out List<Parameter>mergedParameters, out List<DiagnosticMessage>diagnosticMessages)
+        internal static bool TryGetMergedParameters(SortedList<string, Parameter> fromHelp,
+                                                    SortedList<string, Parameter> fromCommand,
+                                                    out SortedList<string, Parameter> mergedParameters,
+                                                    out List<DiagnosticMessage> diagnosticMessages)
         {
             diagnosticMessages = new();
             mergedParameters = new();
@@ -176,20 +182,14 @@ namespace Microsoft.PowerShell.PlatyPS
             // as a parameter may be added, but not documented in the help.
             // or parameters may be documented in the help, but not in the command (because it's dynamic).
             // We will sort the combined list of parameters by name.
-            var parameterNames = new List<string>();
-            parameterNames.AddRange(fromHelp.Select(p => p.Name));
-            parameterNames.AddRange(fromCommand.Select(p => p.Name));
-            parameterNames = parameterNames.Distinct().OrderBy(n => n).ToList();
+            var parameterNames = fromHelp.Keys.Concat(fromCommand.Keys).Distinct().OrderBy(n => n).ToList();
 
             // dynamic parameters are currently unhandled on the command side.
             // They will still be copied if they are in the help.
             foreach(var pName in parameterNames)
             {
-                // We should find 0 or 1 parameters that have the same name as the parameter in the cmdlet.
-                var matchingCommandParameter = fromCommand.Where(x => string.Compare(x.Name, pName) == 0);
-                var cmdParam = matchingCommandParameter.Count() > 0 ? matchingCommandParameter.First() : null;
-                var foundParams = fromHelp.Where(x => string.Compare(x.Name, pName) == 0);
-                var helpParam = foundParams.Count() > 0 ? foundParams.First() : null;
+                fromHelp.TryGetValue(pName, out var helpParam);
+                fromCommand.TryGetValue(pName, out var cmdParam);
 
                 // This should never happen, but if it does, we'll log it.
                 if (helpParam is null && cmdParam is null)
@@ -202,7 +202,7 @@ namespace Microsoft.PowerShell.PlatyPS
                 if (helpParam is not null && cmdParam is null)
                 {
                     diagnosticMessages.Add(new DiagnosticMessage(DiagnosticMessageSource.Merge, $"adding {helpParam.Name}, parameter found in help.", DiagnosticSeverity.Information, "TryGetMergedParameters", -1));
-                    mergedParameters.Add(helpParam);
+                    mergedParameters.Add(helpParam.Name, helpParam);
                     continue;
                 }
 
@@ -215,7 +215,7 @@ namespace Microsoft.PowerShell.PlatyPS
                     {
                         Description = "**FILL IN DESCRIPTION**"
                     };
-                    mergedParameters.Add(cmdParam);
+                    mergedParameters.Add(pName, newParameter);
                     continue;
                 }
 
@@ -224,14 +224,14 @@ namespace Microsoft.PowerShell.PlatyPS
                 if (helpParam is not null && cmdParam is null)
                 {
                     diagnosticMessages.Add(new DiagnosticMessage(DiagnosticMessageSource.Merge, $"adding {helpParam.Name}, parameter found in help but not in the command.", DiagnosticSeverity.Information, "TryGetMergedParameters", -1));
-                    mergedParameters.Add(helpParam);
+                    mergedParameters.Add(helpParam.Name, helpParam);
                     continue;
                 }
 
                 if (helpParam is not null && cmdParam is not null && helpParam == cmdParam)
                 {
                     diagnosticMessages.Add(new DiagnosticMessage(DiagnosticMessageSource.Merge, $"No change to {cmdParam.Name}.", DiagnosticSeverity.Information, "TryGetMergedParameters", -1));
-                    mergedParameters.Add(helpParam);
+                    mergedParameters.Add(helpParam.Name, helpParam);
                     continue;
                 }
 
@@ -285,7 +285,7 @@ namespace Microsoft.PowerShell.PlatyPS
                         newParameter.SupportsWildcards = true;
                     }
 
-                    mergedParameters.Add(newParameter);
+                    mergedParameters.Add(newParameter.Name, newParameter);
                     continue;
                 }
 
