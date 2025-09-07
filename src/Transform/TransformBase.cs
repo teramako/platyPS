@@ -55,7 +55,7 @@ namespace Microsoft.PowerShell.PlatyPS
             }
 
             CommandHelp cmdHelp = new(commandInfo.Name, commandInfo.ModuleName, Settings.Locale);
-            cmdHelp.Metadata = MetadataUtils.GetCommandHelpBaseMetadataFromCommandInfo(commandInfo);
+            cmdHelp.Metadata = MetadataUtils.GetCommandHelpBaseMetadataFromCommandInfo(commandInfo, Settings.Locale);
             cmdHelp.ExternalHelpFile = cmdHelp.Metadata["external help file"].ToString() ?? string.Empty;
             cmdHelp.OnlineVersionUrl = Settings.OnlineVersionUrl ?? cmdHelp.Metadata["HelpUri"] as string;
             cmdHelp.SchemaVersion = cmdHelp.Metadata["PlatyPS schema version"] as string ?? string.Empty;
