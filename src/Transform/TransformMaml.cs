@@ -448,8 +448,8 @@ namespace Microsoft.PowerShell.PlatyPS
 
                 while (reader.ReadToNextSibling(Constants.MamlCommandParameterTag))
                 {
-                    var parameter = ReadParameter(reader.ReadSubtree(), parameterSetCount: -1);
-                    syntaxItem.AddSyntaxParameter(new SyntaxParameter(parameter));
+                    var parameter = ReadParameterAsSyntaxParameter(reader.ReadSubtree());
+                    syntaxItem.AddSyntaxParameter(parameter);
                 }
 
                 foreach(var paramName in syntaxItem.ParameterNames)
@@ -468,6 +468,72 @@ namespace Microsoft.PowerShell.PlatyPS
             }
 
             return null;
+        }
+
+        private SyntaxParameter ReadParameterAsSyntaxParameter(XmlReader reader)
+        {
+            string name = string.Empty;
+            string type = string.Empty;
+            string position = Constants.NamedString;
+            bool required = false;
+
+            reader.Read();
+
+            if (reader.HasAttributes)
+            {
+                if (reader.MoveToAttribute("required"))
+                {
+                    bool.TryParse(reader.Value, out required);
+                }
+
+                if (reader.MoveToAttribute("position"))
+                {
+                    // Value is like '0' or 'named'
+                    position = reader.Value;
+                }
+
+                reader.MoveToElement();
+            }
+
+            if (reader.ReadToDescendant(Constants.MamlNameTag))
+            {
+                name = reader.ReadElementContentAsString();
+            }
+
+            // We read the next element and check the name as it could parameterValue or dev:type
+            // Prefer the value of parameterValue
+            while (reader.Read())
+            {
+                if (string.Equals(reader.Name, Constants.MamlCommandParameterValueTag, StringComparison.OrdinalIgnoreCase))
+                {
+                    type = reader.ReadElementContentAsString();
+                }
+                else if (string.IsNullOrEmpty(type)
+                         && string.Equals(reader.Name, Constants.MamlDevTypeTag, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (reader.ReadToDescendant(Constants.MamlNameTag))
+                    {
+                        type = reader.ReadElementContentAsString();
+                    }
+                }
+            }
+
+            SyntaxParameter syntaxParameter = new(name)
+            {
+                ParameterType = type,
+                Position = position,
+                IsMandatory = required,
+                IsPositional = int.TryParse(position, NumberStyles.None, CultureInfo.InvariantCulture, out _),
+                IsSwitchParameter = type is "SwitchParameter" or "System.Management.Automation.SwitchParameter"
+            };
+
+            // need to go the end of command:parameter
+            if (reader.ReadState != ReadState.EndOfFile)
+            {
+                reader.ReadEndElement();
+            }
+
+            return syntaxParameter;
         }
 
         private Parameter ReadParameter(XmlReader reader, int parameterSetCount)
