@@ -673,6 +673,67 @@ namespace Microsoft.PowerShell.PlatyPS
                     continue;
                 }
 
+                if (i+1 < elements.Length && elements[i+1].StartsWith("{"))
+                {
+                    i++;
+                    bool end = false;
+                    List<string> values = new();
+                    var firstValue = elements[i].Substring(1).Trim();
+                    if (!string.IsNullOrWhiteSpace(firstValue))
+                    {
+                        if (firstValue.EndsWith("}"))
+                        {
+                            values.Add(firstValue.Substring(0, firstValue.Length - 1));
+                            end = true;
+                        }
+                        else
+                        {
+                            values.Add(firstValue);
+                            i++;
+                        }
+                    }
+                    if (!end)
+                    {
+                        for (; i < elements.Length; i++)
+                        {
+                            if (elements[i].EndsWith("}"))
+                            {
+                                var endValue = elements[i].Substring(0, elements[i].Length - 1).Trim();
+                                values.Add(endValue);
+                                break;
+                            }
+                            else if (elements[i].EndsWith("}]"))
+                            {
+                                var endValue = elements[i].Substring(0, elements[i].Length - 2).Trim();
+                                values.Add(endValue);
+                                break;
+                            }
+
+                        }
+                    }
+                    bool positional = false;
+                    bool mandatory = false;
+                    if (parameter.StartsWith("[[") && parameter.EndsWith("]"))
+                    {
+                        positional = true;
+                        position++;
+                    }
+                    else if (parameter.StartsWith("[") && parameter.EndsWith("]"))
+                    {
+                        mandatory = true;
+                        positional = true;
+                        position++;
+                    }
+                    parameters.Add(
+                        new SyntaxParameter {
+                            ParameterName = parameterName,
+                            Position = positional ? (position - 1).ToString() : "named",
+                            IsMandatory = mandatory,
+                            IsPositional = positional
+                        }
+                    );
+                    continue;
+                }
                 // This designates a type.
                 if (i+1 < elements.Length && elements[i+1].StartsWith("<"))
                 {
